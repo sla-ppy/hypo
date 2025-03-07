@@ -40,7 +40,7 @@ int initServer(struct addrinfo* servinfo, int** server_sfd) {
     if (rc != 0) {
         printTime(stderr);
         fprintf(stderr, "[ERR] getaddrinfo() error: %s\n", strerror(errno));
-        return 1;
+        return -1;
     } else {
         printTime(stdout);
         printf("[SERVER] Fetching address information successful\n");
@@ -52,7 +52,7 @@ int initServer(struct addrinfo* servinfo, int** server_sfd) {
     if (**server_sfd == -1) {
         printTime(stderr);
         fprintf(stderr, "[ERR] socket() error: %s\n", strerror(errno));
-        return 1;
+        return -1;
     } else {
         printTime(stdout);
         printf("[SERVER] Listening socket created\n");
@@ -63,7 +63,7 @@ int initServer(struct addrinfo* servinfo, int** server_sfd) {
     if (rc == -1) {
         printTime(stderr);
         fprintf(stderr, "[ERR] bind() error: %s\n", strerror(errno));
-        return 1;
+        return -1;
     } else {
         printTime(stdout);
         printf("[SERVER] Succesfully bound to port: %s\n", server_port);
@@ -74,11 +74,45 @@ int initServer(struct addrinfo* servinfo, int** server_sfd) {
     if (rc == -1) {
         printTime(stderr);
         fprintf(stderr, "[ERR] listen() error: %s\n", strerror(errno));
-        return 1;
+        return -1;
     } else {
         printTime(stdout);
         printf("[SERVER] Listening on: %s:%s\n", server_addr, server_port);
     }
+
+    return 0;
+}
+
+int handleClient(int client_sfd) {
+    // server data
+    int bytes_received;
+    int bytes_sent;
+    char buffer[512];
+
+    // 5. check if we need to recv anything first
+    bytes_received = recv(client_sfd, buffer, sizeof(buffer), 0);
+    if (bytes_received == -1) {
+        printTime(stderr);
+        fprintf(stderr, "[ERR] recv() error during transcieving: %s\n", strerror(errno));
+    } else if (bytes_received == 0) {
+        printTime(stdout);
+        printf("[SERVER] Remote side has closed the connection\n");
+        close(client_sfd);
+        return 1;
+    } else {
+        printTime(stdout);
+        printf("[CLIENT] %s", buffer);
+    }
+
+    // 6. send the echo back
+    bytes_sent = send(client_sfd, buffer, strlen(buffer) + 1, 0);
+    if (bytes_sent == -1) {
+        printTime(stderr);
+        fprintf(stderr, "[ERR] send() error during transcieving: %s\n", strerror(errno));
+    }
+
+    // 7. clear buffer, get ready to recv() next msg
+    memset(buffer, 0, sizeof(buffer));
 
     return 0;
 }
@@ -88,10 +122,10 @@ int main(void) {
     int* server_sfd_ptr = NULL;
 
     int rc = initServer(servinfo, &server_sfd_ptr);
-    if (rc == 1) {
+    if (rc == -1) {
         printTime(stderr);
         fprintf(stderr, "[ERR] initServer() error: %s\n", strerror(errno));
-        return 1;
+        return -1;
     }
     int server_sfd = *server_sfd_ptr;
 
@@ -101,12 +135,7 @@ int main(void) {
     addr_size = sizeof client_addr;
     char ip_addr[INET_ADDRSTRLEN];
     int client_port;
-
-    // server data
     int client_sfd;
-    int bytes_received;
-    int bytes_sent;
-    char buffer[512];
 
     while (true) {
         // 4. We need two loops here so the server doesn't close after losing its
@@ -128,30 +157,10 @@ int main(void) {
         printf("[SERVER] Accepted connection: %s:%d\n", ip_addr, client_port);
 
         while (true) {
-            // 5. check if we need to recv anything first
-            bytes_received = recv(client_sfd, buffer, sizeof(buffer), 0);
-            if (bytes_received == -1) {
-                printTime(stderr);
-                fprintf(stderr, "[ERR] recv() error during transcieving: %s\n", strerror(errno));
-            } else if (bytes_received == 0) {
-                printTime(stdout);
-                printf("[SERVER] Remote side has closed the connection\n");
-                close(client_sfd);
+            rc = handleClient(client_sfd);
+            if (rc == 1) {
                 break;
-            } else {
-                printTime(stdout);
-                printf("[CLIENT] %s", buffer);
             }
-
-            // 6. send the echo back
-            bytes_sent = send(client_sfd, buffer, strlen(buffer) + 1, 0);
-            if (bytes_sent == -1) {
-                printTime(stderr);
-                fprintf(stderr, "[ERR] send() error during transcieving: %s\n", strerror(errno));
-            }
-
-            // 7. clear buffer, get ready to recv() next msg
-            memset(buffer, 0, sizeof(buffer));
         }
     }
 
