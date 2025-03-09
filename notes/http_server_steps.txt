@@ -1,0 +1,22 @@
+1. When client connects send back HTTP 1.0 "200 OK" response and a dummy minimal HTML-encoded message before closing connection
+
+2. Parse the request from the client, ignore headers
+
+3. If the GET request is validly formatted, send 200, else send 400 and dummy message
+Respond with 501 to any other request that isn't GET
+
+4. Make a folder the root "/" directory, put index.html into it and another HTML file, add img file too
+When server starts, verify the root folder existing and that we have permissions to view the contents
+
+5. Parse path from valid GET request, after parsing check if path is "/", server index.html
+If the requested file doesn't exist, respond with 404
+Make this work for text and binary files (images)
+
+6. Add new folders to root, add dummy html files + dummy index.html files
+Add a few levels of nested folders
+Modify program to improve path-parsing logic to handle folders and handle responses appropriately
+
+7. Modify read permissions on a few dummy folders and files, if read permission forbidden respond with 403
+
+
+Support for headers
