@@ -1,7 +1,8 @@
 #include <stdbool.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
-#include <time.h>
+#include <sys/stat.h>
 
 #include <arpa/inet.h>
 #include <complex.h>
@@ -12,24 +13,12 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "request.h"
+#include "util.h"
+
 #define BACKLOG 20
 
-void printTime(FILE* stream) {
-    time_t t = time(NULL); // get local time in calendar format
-
-    char time_buffer[70]; // format local time in calendar to custom format
-
-    if (strftime(time_buffer, sizeof time_buffer, "[%Y.%m.%d - %H:%M:%S] ", localtime(&t))) {
-        fprintf(stream, "%s", time_buffer);
-    } else {
-        fprintf(stderr, "[ERR] getTime() fails to retrietve formatted time\n");
-    }
-}
-
-int initServer(struct addrinfo* servinfo, int** server_sfd) {
-    const char* server_addr = "127.0.0.1";
-    const char* server_port = "10250"; // use above 1024 till 65535, if they aren't already used by some other program
-
+int initServer(const char* server_addr, const char* server_port, struct addrinfo* servinfo, int** server_sfd) {
     struct addrinfo hints;
     memset(&hints, 0, sizeof(hints)); // zero it
     hints.ai_family = AF_INET; // AF_INET - IPv4 || AF_INET6 - IPv6
@@ -87,9 +76,9 @@ int handleClient(int client_sfd) {
     // server data
     int bytes_received;
     int bytes_sent;
-    char buffer[512];
+    char buffer[1024];
 
-    // 5. check if we need to recv anything first
+    // process browser request first so we know what we have to respond with
     bytes_received = recv(client_sfd, buffer, sizeof(buffer), 0);
     if (bytes_received == -1) {
         printTime(stderr);
@@ -101,27 +90,92 @@ int handleClient(int client_sfd) {
         return 1;
     } else {
         printTime(stdout);
-        printf("[CLIENT] %s", buffer);
+        printf("[CLIENT]\n%s", buffer);
     }
 
-    // 6. send the echo back
-    bytes_sent = send(client_sfd, buffer, strlen(buffer) + 1, 0);
+    char request_line[128];
+    struct RequestLine request;
+    request = getRequestLine(buffer, request_line);
+    printf("GET Request Line: %s %s %s\r\n", request.method, request.url, request.protocol_version);
+
+    const char* file_path = "content/index.html";
+    FILE* file = fopen(file_path, "r");
+    struct stat file_info;
+
+    // get information about the file, namely file size
+    int rc = stat(file_path, &file_info);
+    if (rc == -1) {
+        printTime(stderr);
+        fprintf(stderr, "[ERR] stat() error: %s\n", strerror(errno));
+        exit(1);
+    }
+
+    // allocate memory depending on file size, cast to char* which is already in bytes
+    char* file_bytes = (char*)malloc(file_info.st_size);
+    if (file_bytes == NULL) {
+        printTime(stderr);
+        fprintf(stderr, "[ERR] malloc() error: %s\n", strerror(errno));
+        exit(1);
+    }
+    fread(file_bytes, 1, file_info.st_size, file); // read file into allocated memory
+
+    // file_bytes[file_info.st_size - 1] = '\r';
+    // file_bytes[file_info.st_size] = '\0';
+
+    // TODO: continue from here! add headers
+    // FIXME: content is being sent but its not rendered, missing headers?
+    // Full response:
+    // Status-Line
+    // (General Header
+    // Response Header
+    // Entity Header)
+    // CRLF
+    // Entity-Body
+
+    // General Header:
+    // Date S10.6
+    // Pragma S10.12
+    //
+    // Response Header:
+    // Location S10.11
+    // Server S10.14
+    // WWW-Authenticate S10.16
+    //
+    // Entity Header
+    // Allow S10.1
+    // Content-Encoding S10.3
+    // Content-Length S10.4
+    // Content-Type S10.5
+    // Expires S10.7
+    // Last-Modified S10.10
+    // extension-header => HTTP-header
+
+    // Status line = HTTP-Version SP Status-Code SP Reason-Phrase CRLF
+    // Status line: HTTP/1.0 200
+
+    // send back content
+    bytes_sent = send(client_sfd, file_bytes, file_info.st_size, 0);
     if (bytes_sent == -1) {
         printTime(stderr);
         fprintf(stderr, "[ERR] send() error during transcieving: %s\n", strerror(errno));
     }
 
-    // 7. clear buffer, get ready to recv() next msg
-    memset(buffer, 0, sizeof(buffer));
+    //  clear buffer, get ready to recv() next msg
+    memset(file_bytes, 0, file_info.st_size);
+
+    free(file_bytes); // do at some point
 
     return 0;
 }
 
-int main(void) {
+int main(int argc, char** argv) {
     struct addrinfo* servinfo = NULL;
     int* server_sfd_ptr = NULL;
+    char* server_port = argv[1];
 
-    int rc = initServer(servinfo, &server_sfd_ptr);
+    checkArgument(argc, argv);
+
+    int rc = initServer("127.0.0.1", server_port, servinfo, &server_sfd_ptr);
     if (rc == -1) {
         printTime(stderr);
         fprintf(stderr, "[ERR] initServer() error: %s\n", strerror(errno));
@@ -157,8 +211,9 @@ int main(void) {
         printf("[SERVER] Accepted connection: %s:%d\n", ip_addr, client_port);
 
         while (true) {
-            rc = handleClient(client_sfd);
+            int rc = handleClient(client_sfd);
             if (rc == 1) {
+                close(client_sfd);
                 break;
             }
         }
