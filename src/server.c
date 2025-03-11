@@ -74,35 +74,56 @@ int initServer(const char* server_addr, const char* server_port, struct addrinfo
 
 int handleClient(int client_sfd) {
     // server data
-    int bytes_received;
-    int bytes_sent;
-    char buffer[1024];
+    int request_bytes;
+    int response_bytes;
+    char request_buffer[1024];
 
-    // process browser request first so we know what we have to respond with
-    bytes_received = recv(client_sfd, buffer, sizeof(buffer), 0);
-    if (bytes_received == -1) {
+    request_bytes = recv(client_sfd, request_buffer, sizeof(request_buffer), 0);
+    if (request_bytes == -1) {
         printTime(stderr);
         fprintf(stderr, "[ERR] recv() error during transcieving: %s\n", strerror(errno));
-    } else if (bytes_received == 0) {
+    } else if (request_bytes == 0) {
         printTime(stdout);
         printf("[SERVER] Remote side has closed the connection\n");
         close(client_sfd);
         return 1;
     } else {
         printTime(stdout);
-        printf("[CLIENT]\n%s", buffer);
+        printf("[CLIENT]\n%s", request_buffer);
     }
 
+    // get first line of the request
     char request_line[128];
     struct RequestLine request;
-    request = getRequestLine(buffer, request_line);
-    printf("GET Request Line: %s %s %s\r\n", request.method, request.url, request.protocol_version);
+    request = getRequestLine(request_buffer, request_line);
+    // use request.method, request.url, request.protocol_version
 
-    const char* file_path = "content/index.html";
-    FILE* file = fopen(file_path, "r");
-    struct stat file_info;
+    // process file requests accordingly, use concatenation
+    char* root_path = "content/";
+    char* file_name;
+
+    if (strcmp(request.url, "/") == 0) {
+        file_name = "index.html";
+    }
+    /*
+    else if () {
+        int rc = access(root_path + file_name);
+        if (rc == -1) {
+            printTime(stderr);
+            fprintf(stderr, "[ERR] access(): %s\n", strerror(errno));
+            // return "HTTP-1.0 404 Not Found\r\n"
+        }
+    }
+    */
+
+    char* file_path = (char*)malloc(strlen(root_path) + strlen(file_name) + 1);
+    strcpy(file_path, root_path);
+    strcat(file_path, file_name);
+    strcat(file_path, "\0");
 
     // get information about the file, namely file size
+    FILE* file = fopen(file_path, "r");
+    struct stat file_info;
     int rc = stat(file_path, &file_info);
     if (rc == -1) {
         printTime(stderr);
@@ -110,60 +131,58 @@ int handleClient(int client_sfd) {
         exit(1);
     }
 
+    char* status_line = "HTTP/1.1 200 OK\r\n";
+    char* header_content = "Content-Type: text/html\r\nContent-Length: ";
+    char* headers = (char*)malloc(strlen(header_content) + sizeof(file_info.st_size) + 2);
+    sprintf(headers, "%s%lu%s", header_content, file_info.st_size, "\r\n");
+
+    /* Recommended by Adler
+    char const *headers = "... %s%lu%s ...;
+    int required =  snprintf(NULL, 0, headers, ...);
+    if(required < 0) { ... }
+    char *actual_headers = malloc(required + ...);
+    if(!actual_headers) { ... }
+    (void)sprintf(actual_headers, ...);
+    */
+
     // allocate memory depending on file size, cast to char* which is already in bytes
-    char* file_bytes = (char*)malloc(file_info.st_size);
-    if (file_bytes == NULL) {
+    char* entity_body = (char*)malloc(file_info.st_size);
+    if (entity_body == NULL) {
         printTime(stderr);
         fprintf(stderr, "[ERR] malloc() error: %s\n", strerror(errno));
         exit(1);
     }
-    fread(file_bytes, 1, file_info.st_size, file); // read file into allocated memory
+
+    // read file into allocated memory
+    fread(entity_body, 1, file_info.st_size, file);
 
     // file_bytes[file_info.st_size - 1] = '\r';
     // file_bytes[file_info.st_size] = '\0';
 
-    // TODO: continue from here! add headers
-    // FIXME: content is being sent but its not rendered, missing headers?
-    // Full response:
-    // Status-Line
-    // (General Header
-    // Response Header
-    // Entity Header)
-    // CRLF
-    // Entity-Body
+    char* empty_line = "\r\n";
 
-    // General Header:
-    // Date S10.6
-    // Pragma S10.12
-    //
-    // Response Header:
-    // Location S10.11
-    // Server S10.14
-    // WWW-Authenticate S10.16
-    //
-    // Entity Header
-    // Allow S10.1
-    // Content-Encoding S10.3
-    // Content-Length S10.4
-    // Content-Type S10.5
-    // Expires S10.7
-    // Last-Modified S10.10
-    // extension-header => HTTP-header
-
-    // Status line = HTTP-Version SP Status-Code SP Reason-Phrase CRLF
-    // Status line: HTTP/1.0 200
+    char* full_response = (char*)malloc(strlen(status_line) + strlen(headers) + strlen(empty_line) + strlen(entity_body) + 1);
+    strcpy(full_response, status_line);
+    strcat(full_response, headers);
+    strcat(full_response, empty_line);
+    strcat(full_response, entity_body);
+    full_response[strlen(full_response)] = '\0';
 
     // send back content
-    bytes_sent = send(client_sfd, file_bytes, file_info.st_size, 0);
-    if (bytes_sent == -1) {
+    response_bytes = send(client_sfd, full_response, strlen(full_response), 0);
+    if (response_bytes == -1) {
         printTime(stderr);
         fprintf(stderr, "[ERR] send() error during transcieving: %s\n", strerror(errno));
     }
 
-    //  clear buffer, get ready to recv() next msg
-    memset(file_bytes, 0, file_info.st_size);
+    // clear buffer, get ready to recv() next msg
+    memset(entity_body, 0, file_info.st_size);
+    memset(full_response, 0, strlen(full_response));
 
-    free(file_bytes); // do at some point
+    // FIXME: add all free-able variable names to an array and free by loop?
+    free(full_response);
+    free(entity_body);
+    free(file_path);
 
     return 0;
 }
@@ -213,9 +232,13 @@ int main(int argc, char** argv) {
         while (true) {
             int rc = handleClient(client_sfd);
             if (rc == 1) {
-                close(client_sfd);
+                shutdown(client_sfd, 1);
                 break;
             }
+            // TODO: figure out how to send back and forth effectively
+            // we signal the browser to stop loading with closing the socket
+            shutdown(client_sfd, 1);
+            break;
         }
     }
 
