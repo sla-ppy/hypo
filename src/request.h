@@ -1,11 +1,18 @@
-#ifndef REQUEST_H
-struct RequestLine {
+#pragma once
+
+#include <stdbool.h>
+
+typedef struct RequestLine {
     char* method;
     char* url;
     char* protocol_version;
-};
+} RequestLine;
 
-struct RequestLine getRequestLine(char buffer[1024], char request_line[128]);
-#define REQUEST_H
+typedef struct Request {
+    bool error;
+    RequestLine request_line;
+} Request;
 
-#endif // REQUEST_H
+RequestLine getRequestLine(char buffer[1024], char request_line[128]);
+Request receiveRequest(int client_sfd);
+int handleClient(int client_sfd);

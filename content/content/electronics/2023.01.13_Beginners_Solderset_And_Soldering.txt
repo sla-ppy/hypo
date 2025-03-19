@@ -1,0 +1,53 @@
+
+    <!-- CONTENT -->
+    <div id="content">
+        <h3>Beginner's Solderset And Soldering</h3>
+
+        <img src=".\assets\electronics_journey\2023_01_13_a.jpg" width="640" height="480" style=" float: left; margin-right: 1em; "/>
+
+        <p>Oh but how does one get started in electronics, they always ask! Well since this is not a hobby you can do by sitting infront of the computer, you sit at another chair, preferably another desk!</p>
+
+        <p>To get started in analog electronics you will need to pick up the essentials to be able to perform basic work. Why? Because you need to precisely desolder components if you dont want to spend money on brand new, shiny components and shipping costs. You salvage what you can from useless objects around you, including other people's useless objects you can ask for. Of course you also want to be able to solder cables, components to boards, fix electronic devices when you start out, but most essentially you need a good tool to help you with learning to properly solder.</p>
+
+        <br>
+
+        <p style="padding-bottom: 0%; margin-bottom: 0%;">Let us go over the bare necessities that will help you on your journey to becoming a soldering expert:</p>
+        
+        <ul style="margin-top: 0%;">
+          <li>A soldering iron of sorts, preferably a soldering station</li>
+          <li>Some way to hold the hot soldering iron.</li>
+          <li>Brass wool to clean the soldering tip.</li>
+          <li>Solder pump, which is for desoldering.</li>
+          <li>Naturally, solder</li>
+          <li>Rosin flux paste for soldering and desoldering alike, its a must!</li>
+          <li>Automaticly adjusting wire stripper</li>
+          <li>Optionally: Copper braid, or solder wick for a pricy desoldering alternative.</li>
+          <li>Optionally: Solder tip cleaning sponge, which I didn't like using but you might!</li>
+        </ul> 
+
+        <h3>The Devil Is In The Details!</h3>
+
+        <p>I will now give you why I recommend this shopping list and what to look for exactly when you are out hunting for what you need.</p>
+
+        <p><b>Soldering Iron:</b> The tool you will ALWAYS have to use, no matter for what. Soldering, desoldering, cable fixing, repairing literally anything. You cannot have a good time with the hobby if you dont have a reliable iron. Reliable doesn't mean you have to straight up buy a high quality Weller or spend a fortune on a complete station. Just buy something which is right in your price range, and most importantly it should have a temperature control feature! Every time you touch the hot tip against a lower temperature surface, the heat will dissipate. Temp control helps you with this issue by supplying heat constantly whenever you solder so you end up with higher quality soldering points.</p>
+
+        <p>Since we are already talking about soldering let us get into the most important aspect. The technique. While I will try to collect all the details, Branchus Creations has a wonderful in-depth guide about soldering if you'd like to take the extra mile (which I recommend).</p>
+
+        <a href="https://youtu.be/M2Jf8cebwCs">Branchus Creations - Beginner's Guide to Soldering Electronics Part 1</a>
+
+        <p><b>Temperature:</b> You want to turn on your iron, let it completely heat up to the temperature which you will be soldering at 250C° - 400C° (depending on the tip used. With a general tip use 325C°.) for 63/37 solder. With leadfree you need a higher temperature to melt around 400-475C° is where most leadfree solder sits at. Generally I dont recommend using leadfree since it results in worse quality joints than you could achive with 63/37.</p>
+
+        <p><b>Solder Tips:</b> There are also multiple tips available for soldering and depending their use case their shapes change. For starters I recommend not overthinking this step, just pick up a conical solder tip, perhaps 2 right away so you can change it later. These are disposable and should be changed after a while. (However I still use the exact same tip I've started with just about a year later.)</p> 
+
+        <p><b>Solder Types:</b>We have some variety, but generally speaking there are 2 categories you have out there. Leaded and lead-free solder. Lead-free is great if you will solder alot in the room where you sleep, since lead poisoning is real and can be a huge danger if you do not wash your hands after solder sessions. Do not be alarmed though, just make sure you dont eat, touch your eye, put your hand in your mouth after touching leaded solder, wash your hand plentiful or better yet wear gloves and you will be fine. Some do not solder in their bedroom since you practically have lead atoms getting into the air, on your carpet, on the table, clothes, bedsheets, so basically everywhere. I dont have a choice at the moment, nor the mood to solder in a damp, cold workshop so I solder in my room.</p>
+
+        <p>Back to the point. You want to pick up a roll of 63/37 leaded solder, which means there is 40% lead and 60% tin content in the roll. There are of course multiple diameters for the solder available too. You wanna pick something around 0.7mm - 1mm in diameter. Also you must buy solder which has a flux core.</p>
+
+        <p>What is flux you may ask? Well, simply put if you want to actually form a good joint, you will always have to use flux while soldering. Some solder come with rosin cores in the middle, which is the first material that gets heated up practically spewing ontop of the surface you will be heating speeding up the heat transfer process a whole lot, as well as preventing oxidation in the meantime. I've found that in some cases it is best to first apply the rosin flux, then heat up the surface + component you're about to solder. Flux helps with desoldering too.</p>
+
+        <p><b>The Technique:</b> Sadly my technique leaves alot to be desired, however I'll tell you what I know. You wanna let your soldering iron hit the temperature you set it at, then you are going to apply flux paste at the pins or joints you will be soldering. If you are joining 2 separate pieces by solder, you wanna apply flux to both. You then pick up your soldering iron with your dominant hand, have the solder in your left hand, and start heating the panel/mounting hole you will put your component in. If the temperature is correct, you should spend 2 seconds on the heating part, apply the solder and then remove the iron as soon as possible so you dont burn anything. It takes to master all this, so dont be surprised if you will get frustrated.</p>
+
+        <p>Joining 2 wires together should be your first soldering task, as it was for me too. You have to learn how to strip 2 copper cables, preferably with an automaticly adjusting wire stripper. You can and should learn how to strip cables with a knife or a sharp object, but I found that ever since I got the wire stripper, I never want to go back. (For some cases you will still need a knife, I use a box cutter.) After both cables are done, you will need to place the correct size shrink tube on one of the cable and let it fall down on the sleeve so you dont have to worry about forgetting this step later on. Take your stripped copper and gently twist the ends together, but make sure you dont overdo this part. It should be just enough so the cable cores are somewhat held together. (Helps to put both ends in some kind of holder so you can put aside growing a pair of new hands for now.) Apply flux on the surface, and start heating the cores from below with your iron. Apply solder from above is what you should be doing, but I've found that its best to apply solder almost directly at the soldering tip so the copper acts like the wick and it sucks the solder straight up. If the suction is weak, the heat is not enough.</p>
+
+        <h3>-- The End --</h3>
+    </div>

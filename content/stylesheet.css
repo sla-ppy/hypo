@@ -1,0 +1,149 @@
+.piazzolla-slappy {
+  font-family: "Piazzolla", serif;
+  font-optical-sizing: auto;
+  font-weight: 250;
+  font-style: normal;
+}
+
+* {
+}
+
+html, body {
+    background-color: #0A0A0A;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    color: #DB6E0C;  
+    font: 100% "Piazzolla", serif;
+    font-size: 125%;
+    font-weight: 250;
+}
+
+p {
+  padding: 0% 1.5% 1%;
+  line-height: 1.6;
+}
+
+b {
+  font-weight: 750;
+}
+
+ul li {
+    padding-right: 10px;
+    line-height: 1.6;
+}
+
+h3 {
+    padding: 0.5%;
+    margin: 0;
+    color: #832F54;
+}
+
+div#header {
+  display: flex;
+  background-color: #0A0A0A;
+  border-bottom-width: 5px;
+  border-bottom-style: groove;
+  border-color: #171717;
+}
+
+div#header h1 {
+  flex: 1;
+  height: 80px;
+  line-height: 80px;
+  margin: 0%;
+  padding-left: 1%;
+  text-align: left;
+}
+
+div#header h2 {
+  flex: 2;
+  height: 80px;
+  line-height: 80px;
+  margin: 0;
+  padding-left: 10px;
+  padding-right: 1%;
+  text-align: right;
+  background: linear-gradient(90deg, #0a0a0a 10%, #0a0a0a 35%, #832F54 100%);
+  align-items: center;
+}
+
+div#header a {
+  padding: 0.75%;
+  color: #832F54;
+  text-decoration: none;
+}
+
+div#header a:hover {
+  color: #C2447B;
+}
+
+div#navigation {
+  background-color: #0A0A0A;
+  height: 100%;
+  flex: 1;
+  width: 12%;
+  font-size: 14px;
+  float: left;
+  overflow-y: auto;
+  border-right-width: 5px;
+  border-right-style: groove;
+  border-color: #171717;
+  background-image: url(./assets/lambda.png);
+  background-repeat: no-repeat;
+  background-position-y: 5%;
+  background-position-x: 25%;
+}
+
+div#navigation li {
+  list-style: none;
+}
+
+div#navigation ul {
+  padding-left: 15px;
+}
+
+div#navigation a {
+  color: #55266e;
+}
+
+div#navigation a:hover {
+  color: #803ca3;
+}
+
+main {
+  width: 100%;
+}
+
+div#content {
+  flex: 1;
+  padding-top: 2%;
+  padding-left: 13%;
+  padding-right: 1%;
+}
+
+div#content img {
+  padding: 0% 1.5% 1%;
+}
+
+div#content a {
+  padding: 0% 1.5% 1%;
+}
+
+div#footer {
+  text-align: center;
+  justify-content: center;
+  clear: left;
+  width: 100%;
+  height: 1%;
+  border-top-width: 5px;
+  border-top-style: ridge;
+  border-color: #171717;
+}
+
+div#footer p {
+  background-color: #0A0A0A;
+  color: #832F54;
+}

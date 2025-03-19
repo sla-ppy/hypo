@@ -1,0 +1,23 @@
+<!-- CONTENT -->
+    <div id="content">
+        <h3>~70 Kilo Machine</h3>
+
+        <img src=".\assets\electronics_journey\2023_01_10_a.jpg" width="640" height="480" style=" float: right; margin-right: 1em; "/>
+
+        <p>Another weird day came. The neighbour decided to throw out what today?! A whole washing machine! The gods have truly blessed us this day!</p>
+
+        <p>The funniest part of the whole procedure was that I couldn't lift it alone. Had to ask for another pair of hands, but we made sure it was carried out under the shade of darkness!</p>
+
+        <p>While you may think it was unnecessary to wait until the night, Hungary has some weird ass laws about trash. Even if you technically throw out it and put it outside your land, you are still the owner of that trash until the trashmen collect it. There is technically no legal way to repurpose still useful objects (aka trash), except if the owner gives it straight to you.</p>
+
+        <p>Disassembly turned out to be a NIGHTMARE! I believe I've spent a solid week tearing appart the machine's case, because I didn't yet know that there were beautiful concrete weights with rebar which give the weight to the machine itself.</p>
+
+        <p>In any case, there wasn't really much to do here. I salvaged some used cable, strips of which I still have in my junk cable box to this day.</p>
+
+        <img src=".\assets\electronics_journey\2023_01_10_b.jpg" width="480" height="640" style=" float: left; margin-right: 1em; "/>
+
+        <p>Amongst the loot there was a huge damn motor, which I've taken the liberty to put away (still waiting for a proper usage by the time I am writing this). Some electronics panels which were used up to practice soldering. A good quality gray mains cable, some super sturdy springs which could have multiple uses for projects later on. Overall it wasn't worth to scrap this beast, but for experience it was worth the time!</p>
+
+
+        <h3>-- The End --</h3>
+    </div>

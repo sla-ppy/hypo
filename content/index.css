@@ -1,0 +1,171 @@
+.piazzolla-slappy {
+  font-family: "Piazzolla", serif;
+  font-optical-sizing: auto;
+  font-weight: 250;
+  font-style: normal;
+}
+
+* {
+}
+
+html, body {
+    background-color: #0A0A0A;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    color: #DB6E0C;  
+    font: 100% "Piazzolla", serif;
+    font-size: 125%;
+    font-weight: 250;
+}
+
+p {
+    padding: 0% 1.5% 1%;
+    line-height: 1.6;
+}
+
+ul li {
+    padding-right: 10px;
+    line-height: 1.6;
+}
+
+h3 {
+    padding: 0.5%;
+    margin: 0;
+    color: #832F54;
+}
+
+main {
+  display: flex;
+  flex-direction: column;
+}
+
+h1 {
+  font-weight: normal;
+  font-size: 125%;
+}
+
+h1 b {
+  color: #832F54;
+  font-size: 150%;
+}
+
+hr {
+  border-bottom: 1px;
+  border-color: #b6b6b6;
+  width: 40%;
+}
+
+h2 {
+  font-weight: normal;
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+h2 b {
+  color: #832F54;
+}
+
+#index {
+  text-align: center;
+}
+
+#index h2 {
+  font-size: 110%;
+}
+
+#index img {
+  width: 100%;
+  height: auto;
+  max-width: 450;/*500*/;
+  max-height: 99.9;/*111*/;
+}
+
+#bottom {
+  display: inline-flex;
+}
+
+#me {
+  flex: 1;
+  text-align: let;
+  order: 2;
+}
+
+#me img {
+  width: 100%;
+  height: auto;
+  max-width: 279/*372*/;
+  max-height: 402.6/*536.8*/;
+}
+
+#topics {
+  flex: 1;
+  text-align: right;
+  font-size: 125%;
+  order: 1;
+  margin-right: 3%;
+  list-style-type: none
+}
+
+#topics a {
+  color: #DB6E0C;
+  text-decoration: none;
+}
+
+#topics a:hover {
+  color: #b6b6b6;
+}
+
+div#footer {
+  flex: 1;
+  align-content: flex-end;
+  text-align: center;
+  margin-top: 1%;
+  clear: left;
+  width: 100%;
+  height: 1%;
+  border-top-width: 5px;
+  border-top-style: ridge;
+  border-color: #171717;
+}
+
+/* TOPICS - TEXT TRANSFORMATIONS */
+
+.one {
+  margin-right: 15%;
+  transform: rotate(7deg);
+}
+.two {
+  margin-right: 2%;
+  transform: rotate(12deg);
+}
+.three {
+  margin-right: 25%;
+  transform: rotate(-3deg);
+}
+.four {
+  margin-right: 12%;
+  transform: rotate(4deg);
+}
+.five {
+  margin-right: 24%;
+  transform: rotate(-13deg);
+}
+.six {
+  margin-right: 25%;
+  transform: rotate(18deg);
+}
+.seven {
+  margin-right: 20%;
+  transform: rotate(-18deg);
+}
+.eight {
+  margin-right: 10%;
+  transform: rotate(-6deg);
+}
+.nine {
+  margin-right: 0%;
+  transform: rotate(-30deg);
+}
