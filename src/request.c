@@ -1,3 +1,5 @@
+#include <stddef.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
@@ -39,9 +41,10 @@ Request receiveRequest(int client_sfd) {
 
     // server data
     int request_bytes;
-    char request_buffer[2048];
-    memset(request_buffer, 0, sizeof(request_buffer));
-    request_bytes = recv(client_sfd, request_buffer, sizeof(request_buffer), 0);
+    size_t request_buffer_size = 2048;
+    char request_buffer[request_buffer_size];
+    memset(request_buffer, 0, request_buffer_size);
+    request_bytes = recv(client_sfd, request_buffer, request_buffer_size, 0);
     if (request_bytes == -1) {
         printTime(stderr);
         fprintf(stderr, "[ERR] recv() error during transcieving: %s\n", strerror(errno));
@@ -85,12 +88,8 @@ int handleClient(int client_sfd) {
     */
 
     // process file requests accordingly, use concatenation
-    char* root_path = "content";
-    char* file_path = request.request_line.url;
-    char file_path_buffer[PATH_MAX];
-    memset(file_path_buffer, 0, sizeof(file_path_buffer));
-
-    strcpy(file_path_buffer, root_path);
+    const char* file_path = request.request_line.url;
+    char file_path_buffer[PATH_MAX] = "content";
     if (strcmp(request.request_line.url, "/") == 0) {
         strcat(file_path_buffer, "/index.html");
     } else {
@@ -106,8 +105,58 @@ int handleClient(int client_sfd) {
         return 1;
     }
 
+    // get file extension
+    const char* extension = strrchr(file_path_buffer, '.') + 1; // +1 because otherwise we are pointing to the delimiter
+    if (!extension) {
+        printTime(stderr);
+        fprintf(stderr, "[ERR] File extension not found for file!\n");
+        return 1;
+    }
+
+    // check what file extension we have
+    const char* text_types[] = { "css", "html", "javascript" };
+    const char* image_types[] = { "apng", "avif", "gif", "jpeg", "png", "svg+xml", "webp", "x-icon" };
+    const size_t text_types_size = sizeof(text_types) / sizeof(*text_types);
+    const size_t image_types_size = sizeof(image_types) / sizeof(*image_types);
+    char content_type[64];
+    memset(content_type, 0, sizeof(content_type));
+    bool content_type_found = false;
+    FILE* file = NULL;
+    if (!content_type_found) {
+        for (size_t i = 0; i < text_types_size; i++) {
+            if (strcmp(extension, text_types[i]) == 0) {
+                strcpy(content_type, "text/");
+                strcat(content_type, text_types[i]);
+                content_type_found = true;
+                file = fopen(file_path_buffer, "r");
+                break;
+            }
+        }
+    }
+    if (!content_type_found) {
+        for (size_t i = 0; i < image_types_size; i++) {
+            // .ico the file extension name doesn't align with the MIME type x-icon
+            char* extension_ico = "ico";
+            // FIXME: this is a bad way to solve this
+            if (strcmp(extension, extension_ico) == 0) {
+                strcpy(content_type, "image/");
+                strcat(content_type, image_types[i]);
+                content_type_found = true;
+                file = fopen(file_path_buffer, "rb");
+                break;
+            }
+
+            if (strcmp(extension, image_types[i]) == 0) {
+                strcpy(content_type, "image/");
+                strcat(content_type, image_types[i]);
+                content_type_found = true;
+                file = fopen(file_path_buffer, "rb");
+                break;
+            }
+        }
+    }
+
     // get information about the file, namely file size
-    FILE* file = fopen(file_path_buffer, "r");
     struct stat file_info;
     rc = stat(file_path_buffer, &file_info);
     if (rc == -1) {
@@ -117,13 +166,19 @@ int handleClient(int client_sfd) {
     }
 
     char* status_line = "HTTP/1.0 200 OK\r\n";
-    char* header_content = "Content-Type: text/html\r\nContent-Length: ";
-    char* headers = (char*)malloc(strlen(header_content) + sizeof(file_info.st_size) + 2);
-    sprintf(headers, "%s%lu%s", header_content, file_info.st_size, "\r\n");
 
-    // TODO: continue by restructuring header, fetch Content-Type: from URL then rewrite the header system so it can be variable like Content-Length
+    char* header_content_beg = "Content-Type: ";
+    char* header_content_end = "\r\nContent-Length: ";
+    size_t headers_size = strlen(header_content_beg) + strlen(content_type) + strlen(header_content_end) + sizeof(file_info.st_size) + 2;
+    char* const headers = calloc(headers_size + 1, 1);
+    if (headers == NULL) {
+        printTime(stderr);
+        fprintf(stderr, "[ERR] calloc() error: %s\n", strerror(errno));
+        return 1;
+    }
+    sprintf(headers, "%s%s%s%lu\r\n", header_content_beg, content_type, header_content_end, file_info.st_size);
 
-    /* Recommended by Adler
+    /* Recommended by Adler => suggest using snprintf() to check for size, this instead of using an arbitary size
     char const *headers = "... %s%lu%s ...;
     int required =  snprintf(NULL, 0, headers, ...);
     if(required < 0) { ... }
@@ -132,38 +187,37 @@ int handleClient(int client_sfd) {
     (void)sprintf(actual_headers, ...);
     */
 
-    // allocate memory depending on file size, cast to char* which is already in bytes
-    char* entity_body = (char*)malloc(file_info.st_size);
+    char* empty_line = "\r\n";
+
+    // allocate mem and read from file depending on size, char* is already in bytes
+    char* entity_body = calloc(file_info.st_size, 1);
     if (entity_body == NULL) {
         printTime(stderr);
         fprintf(stderr, "[ERR] malloc() error: %s\n", strerror(errno));
         return 1;
     }
     memset(entity_body, 0, file_info.st_size);
+    fread(entity_body, 1, file_info.st_size, file); // read file into allocated memory
+    fclose(file);
 
-    // read file into allocated memory
-    fread(entity_body, 1, file_info.st_size, file);
-
-    // file_bytes[file_info.st_size - 1] = '\r';
-    // file_bytes[file_info.st_size] = '\0';
-
-    char* empty_line = "\r\n";
-
-    size_t status_headers_size = strlen(status_line) + strlen(headers) + 2;
-    size_t full_response_size = status_headers_size + file_info.st_size;
-    char* full_response = (char*)malloc(full_response_size);
-    memset(full_response, 0, full_response_size);
+    // construct full response
+    size_t status_headers_line_size = strlen(status_line) + strlen(headers) + 2;
+    size_t full_response_size = status_headers_line_size + file_info.st_size;
+    char* full_response = calloc(full_response_size + 1, 1);
+    if (full_response == NULL) {
+        printTime(stderr);
+        fprintf(stderr, "[ERR] calloc() error: %s\n", strerror(errno));
+        return 1;
+    }
     strcpy(full_response, status_line);
     strcat(full_response, headers);
     strcat(full_response, empty_line);
-    memcpy(full_response + status_headers_size, entity_body, file_info.st_size);
+    memcpy(full_response + status_headers_line_size, entity_body, file_info.st_size);
+    free(headers);
     free(entity_body);
-    full_response[strlen(full_response)] = '\0';
 
-    fclose(file);
-
-    // send back content
-    int response_bytes = send(client_sfd, full_response, strlen(full_response), 0);
+    // send response
+    int response_bytes = send(client_sfd, full_response, full_response_size, 0);
     if (response_bytes == -1) {
         printTime(stderr);
         fprintf(stderr, "[ERR] send() error during transcieving: %s\n", strerror(errno));
