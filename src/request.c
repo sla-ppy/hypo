@@ -79,13 +79,15 @@ int handleClient(int client_sfd) {
 
     // TODO: handle depending on method
     // close if request method is not correct
-    /*
-    if (strcmp(request.request_line.method, "GET")) {
+    char* methods[] = { "GET", "HEAD", "POST", "PUT", "DELETE" };
+    size_t methods_size = sizeof(methods) / sizeof(*methods);
+    for (size_t i = 0; i < methods_size; i++) {
+    }
+    if (strcmp(request.request_line.method, "GET") != 0) {
         printTime(stderr);
         fprintf(stderr, "[ERR] Request method was not GET\n");
         return 1;
     }
-    */
 
     // process file requests accordingly, use concatenation
     const char* file_path = request.request_line.url;
@@ -100,7 +102,7 @@ int handleClient(int client_sfd) {
     int rc = access(file_path_buffer, R_OK);
     if (rc == -1) {
         printTime(stderr);
-        fprintf(stderr, "[ERR] access(): %s\n", strerror(errno));
+        fprintf(stderr, "[ERR] access()\n");
         // TODO: return "HTTP-1.0 404 Not Found\r\n"
         return 1;
     }
@@ -113,7 +115,7 @@ int handleClient(int client_sfd) {
         return 1;
     }
 
-    // check what file extension we have
+    // check what file extension we need to respond with to the GET request
     const char* text_types[] = { "css", "html", "javascript" };
     const char* image_types[] = { "apng", "avif", "gif", "jpeg", "png", "svg+xml", "webp", "x-icon" };
     const size_t text_types_size = sizeof(text_types) / sizeof(*text_types);
@@ -161,39 +163,43 @@ int handleClient(int client_sfd) {
     rc = stat(file_path_buffer, &file_info);
     if (rc == -1) {
         printTime(stderr);
-        fprintf(stderr, "[ERR] stat() error: %s\n", strerror(errno));
+        fprintf(stderr, "[ERR] stat() error\n");
         return 1;
     }
 
+    // get status line
     char* status_line = "HTTP/1.0 200 OK\r\n";
+    size_t status_line_size = snprintf(NULL, 0, "%s", status_line);
+    if (status_line_size < 0) {
+        printTime(stderr);
+        fprintf(stderr, "[ERR] snprintf() error\n");
+        return 1;
+    }
 
-    char* header_content_beg = "Content-Type: ";
-    char* header_content_end = "\r\nContent-Length: ";
-    size_t headers_size = strlen(header_content_beg) + strlen(content_type) + strlen(header_content_end) + sizeof(file_info.st_size) + 2;
-    char* const headers = calloc(headers_size + 1, 1);
-    if (headers == NULL) {
+    // get headers
+    char* headers_fmt = "Content-Type: %s\r\nContent-Length: %lu\r\n";
+    int headers_size = snprintf(NULL, 0, headers_fmt, content_type, file_info.st_size);
+    if (headers_size < 0) {
+        printTime(stderr);
+        fprintf(stderr, "[ERR] snprintf() error\n");
+        return 1;
+    }
+    char* headers = calloc(headers_size + 1, 1);
+    if (!headers) {
         printTime(stderr);
         fprintf(stderr, "[ERR] calloc() error: %s\n", strerror(errno));
         return 1;
     }
-    sprintf(headers, "%s%s%s%lu\r\n", header_content_beg, content_type, header_content_end, file_info.st_size);
+    (void)sprintf(headers, headers_fmt, content_type, file_info.st_size);
 
-    /* Recommended by Adler => suggest using snprintf() to check for size, this instead of using an arbitary size
-    char const *headers = "... %s%lu%s ...;
-    int required =  snprintf(NULL, 0, headers, ...);
-    if(required < 0) { ... }
-    char *actual_headers = malloc(required + ...);
-    if(!actual_headers) { ... }
-    (void)sprintf(actual_headers, ...);
-    */
-
+    // get empty line
     char* empty_line = "\r\n";
 
     // allocate mem and read from file depending on size, char* is already in bytes
-    char* entity_body = calloc(file_info.st_size, 1);
-    if (entity_body == NULL) {
+    char* entity_body = calloc(file_info.st_size, 1); // FIXME: do i need +1 here for binary data?
+    if (!entity_body) {
         printTime(stderr);
-        fprintf(stderr, "[ERR] malloc() error: %s\n", strerror(errno));
+        fprintf(stderr, "[ERR] calloc() error: %s\n", strerror(errno));
         return 1;
     }
     memset(entity_body, 0, file_info.st_size);
@@ -201,10 +207,10 @@ int handleClient(int client_sfd) {
     fclose(file);
 
     // construct full response
-    size_t status_headers_line_size = strlen(status_line) + strlen(headers) + 2;
+    size_t status_headers_line_size = status_line_size + headers_size + 2;
     size_t full_response_size = status_headers_line_size + file_info.st_size;
     char* full_response = calloc(full_response_size + 1, 1);
-    if (full_response == NULL) {
+    if (!full_response) {
         printTime(stderr);
         fprintf(stderr, "[ERR] calloc() error: %s\n", strerror(errno));
         return 1;
