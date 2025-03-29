@@ -1,7 +1,9 @@
 #pragma once
 
-#include <stddef.h>
 #include <stdbool.h>
+#include <stddef.h>
+#include <stdio.h>
+#include <sys/stat.h>
 
 typedef struct RequestLine {
     char* method;
@@ -14,6 +16,14 @@ typedef struct Request {
     RequestLine request_line;
 } Request;
 
-RequestLine getRequestLine(char buffer[1024], char request_line[128]);
-Request receiveRequest(int client_sfd);
-int handleClient(int client_sfd);
+typedef struct RequestedContent {
+    bool error;
+    char* type;
+    FILE* file;
+    struct stat file_info;
+} RequestedContent;
+
+int handleClient(const int client_sfd);
+RequestedContent processRequest(const int client_sfd);
+Request receiveRequest(const int client_sfd);
+RequestLine getRequestLine(char* buffer, char* line_buffer);

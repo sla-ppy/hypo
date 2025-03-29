@@ -1,8 +1,5 @@
-#include <stddef.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/stat.h>
 
 // network libs
 #include <dirent.h>
@@ -11,17 +8,18 @@
 #include <unistd.h>
 
 #include "request.h"
+#include "response.h"
 #include "util.h"
 
-RequestLine getRequestLine(char* request_buffer, char* request_line_buffer) {
+RequestLine getRequestLine(char* buffer, char* line_buffer) {
     // read data straight from buffer
-    char* pch = strtok(request_buffer, "\r");
-    request_line_buffer = pch;
+    char* pch = strtok(buffer, "\r");
+    line_buffer = pch;
 
     // cut string into substrings and get data from first line
     // FIXME: there is probably a better way to do this
     RequestLine request;
-    pch = strtok(request_line_buffer, " ");
+    pch = strtok(line_buffer, " ");
     for (int i = 0; pch != NULL; i++) {
         if (i == 0) {
             request.method = pch;
@@ -36,15 +34,15 @@ RequestLine getRequestLine(char* request_buffer, char* request_line_buffer) {
     return request;
 }
 
-Request receiveRequest(int client_sfd) {
+Request receiveRequest(const int client_sfd) {
     Request request;
 
     // server data
     int request_bytes;
-    size_t request_buffer_size = 2048;
-    char request_buffer[request_buffer_size];
-    memset(request_buffer, 0, request_buffer_size);
-    request_bytes = recv(client_sfd, request_buffer, request_buffer_size, 0);
+    const size_t buffer_size = 2048;
+    char buffer[buffer_size];
+    memset(buffer, 0, buffer_size);
+    request_bytes = recv(client_sfd, buffer, buffer_size, 0);
     if (request_bytes == -1) {
         printTime(stderr);
         fprintf(stderr, "[ERR] recv() error during transcieving: %s\n", strerror(errno));
@@ -56,37 +54,41 @@ Request receiveRequest(int client_sfd) {
         return request;
     } else {
         printTime(stdout);
-        printf("[CLIENT]\n%s", request_buffer);
+        printf("[CLIENT]\n%s", buffer);
     }
 
     // get first line of the request
-    char request_line_buffer[128];
-    memset(request_line_buffer, 0, sizeof(request_line_buffer));
-    request.request_line = getRequestLine(request_buffer, request_line_buffer);
+    const size_t line_buffer_size = 128;
+    char line_buffer[line_buffer_size];
+    memset(line_buffer, 0, sizeof(line_buffer));
+    request.request_line = getRequestLine(buffer, line_buffer);
 
     request.error = false;
     return request;
 }
 
-int handleClient(int client_sfd) {
+RequestedContent processRequest(const int client_sfd) {
     Request request;
+    RequestedContent content;
     request = receiveRequest(client_sfd);
     if (request.error) {
         printTime(stderr);
         fprintf(stderr, "[ERR] Request method was not GET\n");
-        return 1;
+        content.error = true;
+        return content;
     }
 
     // TODO: handle depending on method
     // close if request method is not correct
-    char* methods[] = { "GET", "HEAD", "POST", "PUT", "DELETE" };
-    size_t methods_size = sizeof(methods) / sizeof(*methods);
+    const char* methods[] = { "GET", "HEAD", "POST" };
+    const size_t methods_size = sizeof(methods) / sizeof(*methods);
     for (size_t i = 0; i < methods_size; i++) {
     }
     if (strcmp(request.request_line.method, "GET") != 0) {
         printTime(stderr);
         fprintf(stderr, "[ERR] Request method was not GET\n");
-        return 1;
+        content.error = true;
+        return content;
     }
 
     // process file requests accordingly, use concatenation
@@ -104,7 +106,8 @@ int handleClient(int client_sfd) {
         printTime(stderr);
         fprintf(stderr, "[ERR] access()\n");
         // TODO: return "HTTP-1.0 404 Not Found\r\n"
-        return 1;
+        content.error = true;
+        return content;
     }
 
     // get file extension
@@ -112,7 +115,8 @@ int handleClient(int client_sfd) {
     if (!extension) {
         printTime(stderr);
         fprintf(stderr, "[ERR] File extension not found for file!\n");
-        return 1;
+        content.error = true;
+        return content;
     }
 
     // check what file extension we need to respond with to the GET request
@@ -120,7 +124,8 @@ int handleClient(int client_sfd) {
     const char* image_types[] = { "apng", "avif", "gif", "jpeg", "png", "svg+xml", "webp", "x-icon" };
     const size_t text_types_size = sizeof(text_types) / sizeof(*text_types);
     const size_t image_types_size = sizeof(image_types) / sizeof(*image_types);
-    char content_type[64];
+    const size_t content_type_size = 64;
+    char content_type[content_type_size];
     memset(content_type, 0, sizeof(content_type));
     bool content_type_found = false;
     FILE* file = NULL;
@@ -157,6 +162,8 @@ int handleClient(int client_sfd) {
             }
         }
     }
+    content.type = content_type;
+    content.file = file;
 
     // get information about the file, namely file size
     struct stat file_info;
@@ -164,72 +171,24 @@ int handleClient(int client_sfd) {
     if (rc == -1) {
         printTime(stderr);
         fprintf(stderr, "[ERR] stat() error\n");
+        content.error = true;
+        return content;
+    }
+    content.file_info = file_info;
+
+    content.error = false;
+    return content;
+}
+
+int handleClient(const int client_sfd) {
+    RequestedContent content = processRequest(client_sfd);
+    if (content.error) {
+        printTime(stderr);
+        fprintf(stderr, "[ERR] Requested content couldn't be created\n");
         return 1;
     }
 
-    // get status line
-    char* status_line = "HTTP/1.0 200 OK\r\n";
-    size_t status_line_size = snprintf(NULL, 0, "%s", status_line);
-    if (status_line_size < 0) {
-        printTime(stderr);
-        fprintf(stderr, "[ERR] snprintf() error\n");
-        return 1;
-    }
-
-    // get headers
-    char* headers_fmt = "Content-Type: %s\r\nContent-Length: %lu\r\n";
-    int headers_size = snprintf(NULL, 0, headers_fmt, content_type, file_info.st_size);
-    if (headers_size < 0) {
-        printTime(stderr);
-        fprintf(stderr, "[ERR] snprintf() error\n");
-        return 1;
-    }
-    char* headers = calloc(headers_size + 1, 1);
-    if (!headers) {
-        printTime(stderr);
-        fprintf(stderr, "[ERR] calloc() error: %s\n", strerror(errno));
-        return 1;
-    }
-    (void)sprintf(headers, headers_fmt, content_type, file_info.st_size);
-
-    // get empty line
-    char* empty_line = "\r\n";
-
-    // allocate mem and read from file depending on size, char* is already in bytes
-    char* entity_body = calloc(file_info.st_size, 1); // FIXME: do i need +1 here for binary data?
-    if (!entity_body) {
-        printTime(stderr);
-        fprintf(stderr, "[ERR] calloc() error: %s\n", strerror(errno));
-        return 1;
-    }
-    memset(entity_body, 0, file_info.st_size);
-    fread(entity_body, 1, file_info.st_size, file); // read file into allocated memory
-    fclose(file);
-
-    // construct full response
-    size_t status_headers_line_size = status_line_size + headers_size + 2;
-    size_t full_response_size = status_headers_line_size + file_info.st_size;
-    char* full_response = calloc(full_response_size + 1, 1);
-    if (!full_response) {
-        printTime(stderr);
-        fprintf(stderr, "[ERR] calloc() error: %s\n", strerror(errno));
-        return 1;
-    }
-    strcpy(full_response, status_line);
-    strcat(full_response, headers);
-    strcat(full_response, empty_line);
-    memcpy(full_response + status_headers_line_size, entity_body, file_info.st_size);
-    free(headers);
-    free(entity_body);
-
-    // send response
-    int response_bytes = send(client_sfd, full_response, full_response_size, 0);
-    if (response_bytes == -1) {
-        printTime(stderr);
-        fprintf(stderr, "[ERR] send() error during transcieving: %s\n", strerror(errno));
-        return 1;
-    }
-    free(full_response);
+    constructFullResponse(client_sfd, content.type, content.file, content.file_info);
 
     return 0;
 }
