@@ -13,9 +13,3 @@ Refer to terminal if met with problems
 Using -std=gnu99 proved to be necessary, as -std=c99 has issues with POSIX\
 -g => generates debug info\
 -O0 => genereate unoptimized code (optimization flag)
-
-## Main status code table
-
-| RC  | Meaning             |
-| --- | ------------------- |
-| -1  | initServer() failed |
